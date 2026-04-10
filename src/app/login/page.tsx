@@ -40,9 +40,6 @@ export default function LoginPage() {
         {/* Brand/Logo - Refined Gold Style */}
         <div className="flex flex-col items-center mb-10 text-center">
           <div className="relative group transition-transform duration-500 hover:scale-110">
-            <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-amber-600 rounded-[28px] flex items-center justify-center font-black text-4xl text-black shadow-2xl shadow-amber-900/40 transform -rotate-6 mb-6">
-              S
-            </div>
             <div className="absolute inset-0 rounded-[28px] bg-white/20 blur-xl opacity-0 group-hover:opacity-40 transition-opacity" />
           </div>
           
