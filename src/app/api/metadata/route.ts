@@ -132,7 +132,7 @@ export async function GET(request: Request) {
       title, 
       description: summary, 
       tags,
-      embedding: null // Embeddings removed as requested (requires Gemini/OpenAI)
+      embedding: null 
     });
   } catch (error) {
     console.error('Metadata fetch error:', error);

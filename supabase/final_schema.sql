@@ -1,11 +1,9 @@
--- ==========================================
 -- SMART BOOKMARK PROTOCOL
--- Consolidated Database Schema & Configuration (Hardened)
--- ==========================================
+-- Consolidated Database Schema & Configuration
 
 -- 1. Enable Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "vector"; -- Required for semantic search
+CREATE EXTENSION IF NOT EXISTS "vector"; 
 
 -- 2. Folders Table
 CREATE TABLE IF NOT EXISTS folders (

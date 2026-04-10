@@ -37,11 +37,18 @@ export function BookmarkForm({ onSuccess, onCancel }: BookmarkFormProps) {
       
       setIsFetchingMetadata(true);
       
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.warn('Metadata fetch: No active session found. Skipping authenticated AI synthesis.');
+        // Optionally allow a fallback to basic tag extraction if desired
+        setIsFetchingMetadata(false);
+        return;
+      }
       
       const res = await fetch(`/api/metadata?url=${encodeURIComponent(targetUrl)}`, {
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`
+          'Authorization': `Bearer ${session.access_token}`
         }
       });
       if (res.ok) {
@@ -220,7 +227,7 @@ export function BookmarkForm({ onSuccess, onCancel }: BookmarkFormProps) {
         </label>
         <textarea
           className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-[#131313] border border-[#2A2A2A] rounded-lg sm:rounded-xl text-neutral-300 placeholder:text-neutral-700 outline-none transition-all focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50 resize-none min-h-[80px] sm:min-h-[100px] text-xs sm:text-sm"
-          placeholder="What's special about this link? Gemini will help you summarize..."
+          placeholder="What's special about this link? Groq will help you summarize..."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
