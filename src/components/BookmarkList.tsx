@@ -31,8 +31,9 @@ export function BookmarkList({ selectedFolderId, folders }: BookmarkListProps) {
     fetchBookmarks();
 
     // Simplify the subscription to let Supabase RLS handle the security automatically
+    // --- LIQUID SYNC: BOOKMARKS ---
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel(`bookmark-sync-${user.id}`)
       .on(
         'postgres_changes',
         { 
@@ -41,11 +42,12 @@ export function BookmarkList({ selectedFolderId, folders }: BookmarkListProps) {
           table: 'bookmarks'
         },
         (payload) => {
-          console.log('Realtime Event Received:', payload.eventType, payload);
+          console.log('Bookmark Realtime Sync:', payload.eventType, payload);
           
           if (payload.eventType === 'INSERT') {
             const newBookmark = payload.new as Bookmark;
             setBookmarks((prev) => {
+              // Prevent duplicates if the insertion was already optimistic
               if (prev.some(b => b.id === newBookmark.id)) return prev;
               return [newBookmark, ...prev];
             });
@@ -60,7 +62,7 @@ export function BookmarkList({ selectedFolderId, folders }: BookmarkListProps) {
         }
       )
       .subscribe((status) => {
-        console.log('Realtime Subscription Status:', status);
+        console.log(`Bookmark Sync Status: ${status}`);
       });
 
     return () => {

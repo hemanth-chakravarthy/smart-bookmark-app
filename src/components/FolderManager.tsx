@@ -27,10 +27,9 @@ interface FolderManagerProps {
   folders: Folder[];
   selectedFolderId: string | null;
   onSelectFolder: (id: string | null) => void;
-  onFoldersChange: () => void;
 }
 
-export function FolderManager({ folders, selectedFolderId, onSelectFolder, onFoldersChange }: FolderManagerProps) {
+export function FolderManager({ folders, selectedFolderId, onSelectFolder }: FolderManagerProps) {
   const { user } = useAuth();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -49,7 +48,6 @@ export function FolderManager({ folders, selectedFolderId, onSelectFolder, onFol
       if (error) throw error;
       setNewFolderName('');
       setIsCreateModalOpen(false);
-      onFoldersChange();
     } catch (err: unknown) {
       alert('Error creating folder');
     }
@@ -84,8 +82,6 @@ export function FolderManager({ folders, selectedFolderId, onSelectFolder, onFol
         .eq('id', id);
 
       if (error) throw error;
-      
-      onFoldersChange();
     } catch (err: any) {
       alert(`Error deleting folder: ${err.message}`);
     }

@@ -31,13 +31,14 @@ export default function Dashboard() {
     if (data) setFolders(data);
   };
 
+  // --- LIQUID SYNC: FOLDERS ---
   useEffect(() => {
     if (!user) return;
     
     fetchFolders();
     
     const channel = supabase
-      .channel(`public-folders-${user.id}`)
+      .channel(`folder-sync-${user.id}`)
       .on(
         'postgres_changes', 
         { 
@@ -46,7 +47,10 @@ export default function Dashboard() {
           table: 'folders',
           filter: `user_id=eq.${user.id}`
         }, 
-        fetchFolders
+        (payload) => {
+          console.log('Folder Realtime Update:', payload);
+          fetchFolders();
+        }
       )
       .subscribe();
 
@@ -79,7 +83,6 @@ export default function Dashboard() {
             setSelectedFolderId(id);
             setIsSidebarOpen(false);
           }}
-          onFoldersChange={fetchFolders}
         />
         {/* Close button for mobile */}
         <button 
