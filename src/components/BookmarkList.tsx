@@ -30,53 +30,49 @@ export function BookmarkList({ selectedFolderId, folders }: BookmarkListProps) {
 
     fetchBookmarks();
 
-    // Simplify the subscription to let Supabase RLS handle the security automatically
-    // --- LIQUID SYNC: BOOKMARKS ---
-    const channel = supabase
-      .channel(`bookmark-sync-${user.id}`)
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'bookmarks'
-        },
-        (payload) => {
-          console.log('Bookmark Realtime Sync:', payload.eventType, payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newBookmark = payload.new as Bookmark;
-            setBookmarks((prev) => {
-              // Prevent duplicates if the insertion was already optimistic
-              if (prev.some(b => b.id === newBookmark.id)) return prev;
-              return [newBookmark, ...prev];
-            });
-          } else if (payload.eventType === 'DELETE') {
-            setBookmarks((prev) => prev.filter((b) => b.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            const updated = payload.new as Bookmark;
-            setBookmarks((prev) =>
-              prev.map((b) => (b.id === updated.id ? updated : b))
-            );
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log(`Bookmark Sync Status: ${status}`);
-      });
+    // --- GLOBAL SYNC LISTENER ---
+    // Instead of managing our own channel, we listen to events from the Dashboard
+    const handleGlobalSync = (event: any) => {
+      const { payload } = event.detail;
+      console.log('Bookmark List: Global Sync Detected', payload.eventType);
+      
+      if (payload.eventType === 'INSERT') {
+        const newBookmark = payload.new as Bookmark;
+        setBookmarks((prev) => {
+          if (prev.some(b => b.id === newBookmark.id)) return prev;
+          return [newBookmark, ...prev];
+        });
+      } else if (payload.eventType === 'DELETE') {
+        setBookmarks((prev) => prev.filter((b) => b.id !== payload.old.id));
+      } else if (payload.eventType === 'UPDATE') {
+        const updated = payload.new as Bookmark;
+        setBookmarks((prev) =>
+          prev.map((b) => (b.id === updated.id ? updated : b))
+        );
+      }
+    };
+
+    window.addEventListener('bookmark-protocol-refresh', handleGlobalSync);
 
     return () => {
-      supabase.removeChannel(channel);
+      window.removeEventListener('bookmark-protocol-refresh', handleGlobalSync);
     };
   }, [user]);
 
   const fetchBookmarks = async () => {
+    if (!user) return;
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.from('bookmarks').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('bookmarks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
       if (error) throw error;
       setBookmarks(data || []);
     } catch (err: any) {
+      console.error('Bookmark Protocol: Initial load failed', err);
       setError(err.message || 'Failed to load bookmarks');
     } finally {
       setIsLoading(false);

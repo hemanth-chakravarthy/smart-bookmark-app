@@ -31,14 +31,16 @@ export default function Dashboard() {
     if (data) setFolders(data);
   };
 
-  // --- LIQUID SYNC: FOLDERS ---
+  // --- GLOBAL REAL-TIME SYNC ---
   useEffect(() => {
     if (!user) return;
     
     fetchFolders();
     
+    // Unified sync channel for the whole dashboard
     const channel = supabase
-      .channel(`folder-sync-${user.id}`)
+      .channel(`dashboard-sync-${user.id}`)
+      // 1. Folder Sync
       .on(
         'postgres_changes', 
         { 
@@ -48,13 +50,35 @@ export default function Dashboard() {
           filter: `user_id=eq.${user.id}`
         }, 
         (payload) => {
-          console.log('Folder Realtime Update:', payload);
+          console.log('Global Sync: Folder Event', payload.eventType);
           fetchFolders();
         }
       )
-      .subscribe();
+      // 2. Bookmark Sync
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookmarks',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Global Sync: Bookmark Event', payload.eventType);
+          // Broadcast to the rest of the app
+          window.dispatchEvent(new CustomEvent('bookmark-protocol-refresh', {
+            detail: { payload }
+          }));
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Global Real-time: Protocol Active');
+        }
+      });
 
     return () => {
+      console.log('Global Real-time: Cleaning up');
       supabase.removeChannel(channel);
     };
   }, [user]);
