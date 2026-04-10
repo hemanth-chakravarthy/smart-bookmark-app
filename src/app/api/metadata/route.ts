@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
 import Groq from 'groq-sdk';
+import { supabase } from '@/lib/supabase';
 
 // Initialize Groq client
 // High-speed text synthesis for summaries and tags
@@ -30,6 +31,21 @@ export async function GET(request: Request) {
   if (!url) {
     return NextResponse.json({ error: 'URL is required' }, { status: 400 });
   }
+
+  // --- AUTHENTICATION GUARD ---
+  // Prevent unauthorized users from draining the Groq API quota
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader) {
+    return NextResponse.json({ error: 'Unauthorized: No token provided' }, { status: 401 });
+  }
+
+  const token = authHeader.replace('Bearer ', '');
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized: Invalid token' }, { status: 401 });
+  }
+  // ----------------------------
 
   // Define a default response
   const defaultResponse = {

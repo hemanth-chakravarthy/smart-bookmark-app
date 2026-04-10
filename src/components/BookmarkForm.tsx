@@ -36,7 +36,14 @@ export function BookmarkForm({ onSuccess, onCancel }: BookmarkFormProps) {
       if (title.length > 0 && description.length > 0) return;
       
       setIsFetchingMetadata(true);
-      const res = await fetch(`/api/metadata?url=${encodeURIComponent(targetUrl)}`);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const res = await fetch(`/api/metadata?url=${encodeURIComponent(targetUrl)}`, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.title && !title) setTitle(data.title);
